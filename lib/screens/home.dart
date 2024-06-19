@@ -111,7 +111,11 @@ class _HomeScreenState extends State<HomeScreen> {
                     color: Colors.grey,
                     size: 35,
                   ),
-                  onPressed: () => {},
+                  onPressed: () => {
+                    Navigator.pushNamed(context, '/new', arguments: {
+                      'isNew': true,
+                    }),
+                  },
                 ),
               )
             ],
@@ -184,7 +188,8 @@ class _HomeScreenState extends State<HomeScreen> {
                             color: Colors.transparent,
                             child: InkWell(
                               onTap: () {
-                                // Handle the tap event
+                                Navigator.pushNamed(context, '/detail',
+                                    arguments: item);
                               },
                               child: ListTile(
                                 title: Text(item['title']),

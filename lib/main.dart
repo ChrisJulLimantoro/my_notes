@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:my_notes/screens/lock.dart';
 import 'package:my_notes/screens/home.dart';
+import 'package:my_notes/screens/detail.dart';
 
 void main() {
   runApp(const MyApp());
@@ -23,6 +24,8 @@ class MyApp extends StatelessWidget {
         routes: {
           '/home': (context) => const HomeScreen(),
           '/lock': (context) => const LockScreen(),
+          '/new': (context) => const DetailScreen(isNew: true),
+          '/detail': (context) => const DetailScreen(isNew: false),
         });
   }
 }
