@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:my_notes/widgets/pin.dart';
+import 'package:crypt/crypt.dart';
 
 class LockScreen extends StatefulWidget {
   const LockScreen({Key? key}) : super(key: key);
@@ -11,7 +12,7 @@ class LockScreen extends StatefulWidget {
 
 class _LockScreenState extends State<LockScreen> {
   String pin = '';
-  String pass = "123456";
+  String pass = Crypt.sha256('123456').toString();
   int isCorrect = 0;
 
   void addPin(BuildContext context, String value) async {
@@ -22,21 +23,21 @@ class _LockScreenState extends State<LockScreen> {
     } else if (pin.length == 5) {
       setState(() {
         pin += value;
-        if (pin == pass) {
+        if (Crypt(pass).match(pin.trim())) {
           isCorrect = 1;
         } else {
           isCorrect = 2;
         }
       });
-      await Future.delayed(const Duration(milliseconds: 500));
-      if (pin == pass) {
-        Navigator.pushNamed(context, '/home');
-      } else {
-        setState(() {
-          pin = '';
-          isCorrect = 0;
-        });
+      await Future.delayed(const Duration(seconds: 1));
+      if (Crypt(pass).match(pin.trim())) {
+        debugPrint("hello");
+        Navigator.pushReplacementNamed(context, '/home');
       }
+      setState(() {
+        pin = '';
+        isCorrect = 0;
+      });
     }
   }
 
@@ -52,16 +53,18 @@ class _LockScreenState extends State<LockScreen> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: List.generate(count, (index) {
+        int value = start + index;
         return Padding(
           padding: const EdgeInsets.symmetric(horizontal: 28.0),
           child: FloatingActionButton(
             onPressed: () {
-              addPin(context, '${start + index}');
+              addPin(context, '$value');
             },
-            child: Text('${start + index}'),
             backgroundColor: Colors.white,
             elevation: 2,
             shape: const CircleBorder(),
+            heroTag: 'pin_$value',
+            child: Text('$value'),
           ),
         );
       }),
@@ -122,6 +125,7 @@ class _LockScreenState extends State<LockScreen> {
                     backgroundColor: Colors.white,
                     elevation: 2,
                     shape: const CircleBorder(),
+                    heroTag: 'pin_0',
                     child: const Text('0'),
                   ),
                 ),
@@ -134,6 +138,7 @@ class _LockScreenState extends State<LockScreen> {
                     backgroundColor: Colors.white,
                     elevation: 2,
                     shape: const CircleBorder(),
+                    heroTag: 'pin_back',
                     child: const Icon(CupertinoIcons.chevron_back),
                   ),
                 )
