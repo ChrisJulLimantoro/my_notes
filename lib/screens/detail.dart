@@ -27,6 +27,22 @@ class _DetailScreenState extends State<DetailScreen> {
   final TextEditingController titleController = TextEditingController();
   final TextEditingController notesController = TextEditingController();
 
+  String getTime(DateTime createdAt) {
+    Duration diff = DateTime.now().difference(createdAt);
+
+    if (diff.inDays >= 1) {
+      return '${diff.inDays}d ago';
+    } else if (diff.inHours >= 1) {
+      return '${diff.inHours}h ago';
+    } else if (diff.inMinutes >= 1) {
+      return '${diff.inMinutes}m ago';
+    } else if (diff.inSeconds >= 1) {
+      return '${diff.inSeconds}s ago';
+    } else {
+      return 'just now';
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -109,7 +125,7 @@ class _DetailScreenState extends State<DetailScreen> {
                   ),
                 ),
                 Text(
-                  'Last edited 1 day ago',
+                  getTime(note.updatedAt),
                   style: TextStyle(
                     color: Colors.grey[600],
                     fontSize: 12,

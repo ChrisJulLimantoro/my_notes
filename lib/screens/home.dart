@@ -3,6 +3,8 @@ import 'package:flutter/cupertino.dart';
 import 'package:intl/intl.dart';
 import 'package:hive/hive.dart';
 import 'package:my_notes/models/note.dart';
+import 'package:my_notes/widgets/dismissable_bg.dart';
+import 'package:my_notes/widgets/custom_tile.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -68,6 +70,7 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
+  // Function for adding notes
   void addNote(Note item) {
     setState(() {
       notes.add(item);
@@ -102,6 +105,54 @@ class _HomeScreenState extends State<HomeScreen> {
       });
     });
   }
+
+  // function for pinning notes
+  void pinNotes(Note item) {
+    showCupertinoDialog(
+      context: context,
+      builder: (context) {
+        return CupertinoAlertDialog(
+          title: Text(item.isPinned ? 'Note Unpinned' : 'Note Pinned'),
+          content: Text(
+              'Are you sure want to ${item.isPinned ? 'unpin' : 'pin'} this note ${item.title}?'),
+          actions: [
+            CupertinoDialogAction(
+              child: const Text(
+                'Cancel',
+                style: TextStyle(color: Colors.red),
+              ),
+              onPressed: () {
+                setState(() {
+                  notes.add(item);
+                  box.add(item);
+                  filterNotes("");
+                });
+                Navigator.pop(context);
+              },
+            ),
+            CupertinoDialogAction(
+              child: const Text(
+                'Proceed',
+                style: TextStyle(color: Colors.blue),
+              ),
+              onPressed: () {
+                item.isPinned = !item.isPinned;
+                setState(() {
+                  notes.add(item);
+                  box.add(item);
+                  filterNotes("");
+                });
+                Navigator.pop(context);
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  // function for setting menu
+  void launchSettingsMenu(BuildContext context) {}
 
   @override
   Widget build(BuildContext context) {
@@ -187,26 +238,13 @@ class _HomeScreenState extends State<HomeScreen> {
                           key: ValueKey(item.id),
                           onDismissed: (direction) {
                             deleteNotes(item);
-                            launchSnackBar(context, item);
+                            if (direction == DismissDirection.endToStart) {
+                              launchSnackBar(context, item);
+                            } else {
+                              pinNotes(item);
+                            }
                           },
-                          background: Container(
-                            color: Colors.red,
-                            child: const Padding(
-                              padding: EdgeInsets.symmetric(horizontal: 16.0),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.end,
-                                children: [
-                                  Icon(Icons.delete, color: Colors.white),
-                                  Text('Deleted',
-                                      style: TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.bold,
-                                      )),
-                                ],
-                              ),
-                            ),
-                          ),
+                          background: DismissableBgWidget(pin: item.isPinned),
                           child: Material(
                             color: Colors.transparent,
                             child: InkWell(
@@ -214,67 +252,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 Navigator.pushNamed(context, '/detail',
                                     arguments: item);
                               },
-                              child: CupertinoListTile(
-                                padding: const EdgeInsets.only(
-                                  top: 16.0,
-                                  left: 8.0,
-                                  bottom: 16.0,
-                                  right: 16.0,
-                                ),
-                                leading: item.isPinned
-                                    ? IconButton(
-                                        icon: const Icon(
-                                          Icons.push_pin,
-                                          size: 16,
-                                          color: Colors.black,
-                                        ),
-                                        onPressed: () async {
-                                          setState(() {
-                                            notes
-                                                .firstWhere((element) =>
-                                                    element.id == item.id)
-                                                .isPinned = false;
-                                          });
-                                          await Future.delayed(const Duration(
-                                              milliseconds: 500));
-                                          setState(() {
-                                            filterNotes(searchController.text);
-                                          });
-                                        },
-                                      )
-                                    : IconButton(
-                                        icon: const Icon(
-                                          Icons.push_pin,
-                                          size: 16,
-                                          color: Colors.grey,
-                                        ),
-                                        onPressed: () async {
-                                          setState(() {
-                                            notes
-                                                .firstWhere((element) =>
-                                                    element.id == item.id)
-                                                .isPinned = true;
-                                          });
-                                          await Future.delayed(const Duration(
-                                              milliseconds: 500));
-                                          setState(() {
-                                            filterNotes(searchController.text);
-                                          });
-                                        },
-                                      ),
-                                leadingToTitle: 8.0,
-                                leadingSize: 30,
-                                title: Text(item.title),
-                                subtitle: Text(item.content,
-                                    maxLines: 1, overflow: TextOverflow.clip),
-                                trailing: Text(
-                                    DateFormat('yyyy-MM-dd')
-                                        .format(item.createdAt),
-                                    style: TextStyle(
-                                      color: Colors.grey[600],
-                                      fontSize: 12,
-                                    )),
-                              ),
+                              child: CustomTile(item: item),
                             ),
                           ),
                         );
