@@ -2,6 +2,8 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:my_notes/widgets/pin.dart';
 import 'package:crypt/crypt.dart';
+import 'package:hive/hive.dart';
+// import 'package:my_notes/models/note.dart';
 
 class LockScreen extends StatefulWidget {
   const LockScreen({Key? key}) : super(key: key);
@@ -11,9 +13,21 @@ class LockScreen extends StatefulWidget {
 }
 
 class _LockScreenState extends State<LockScreen> {
+  var box = Hive.box('settings');
   String pin = '';
-  String pass = Crypt.sha256('123456').toString();
+  String pass = '';
   int isCorrect = 0;
+  int isSetup = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    if (box.get('pin') == null) {
+      isSetup = 1;
+    } else {
+      pass = box.get('pin');
+    }
+  }
 
   void addPin(BuildContext context, String value) async {
     if (pin.length < 5) {
@@ -21,23 +35,50 @@ class _LockScreenState extends State<LockScreen> {
         pin += value;
       });
     } else if (pin.length == 5) {
-      setState(() {
-        pin += value;
+      if (isSetup == 1) {
+        setState(() {
+          pin += value;
+          pass = Crypt.sha256(pin.trim()).toString();
+          pin = '';
+          isSetup = 2;
+        });
+      } else if (isSetup == 2) {
+        setState(() {
+          pin += value;
+          if (Crypt(pass).match(pin.trim())) {
+            isCorrect = 3;
+            box.put('pin', pass);
+          } else {
+            isCorrect = 4;
+          }
+        });
+        await Future.delayed(const Duration(seconds: 1));
         if (Crypt(pass).match(pin.trim())) {
-          isCorrect = 1;
-        } else {
-          isCorrect = 2;
+          Navigator.pushReplacementNamed(context, '/home');
         }
-      });
-      await Future.delayed(const Duration(seconds: 1));
-      if (Crypt(pass).match(pin.trim())) {
-        debugPrint("hello");
-        Navigator.pushReplacementNamed(context, '/home');
+        setState(() {
+          pin = '';
+          isCorrect = 0;
+        });
+      } else {
+        setState(() {
+          pin += value;
+          if (Crypt(pass).match(pin.trim())) {
+            isCorrect = 1;
+          } else {
+            isCorrect = 2;
+          }
+        });
+        await Future.delayed(const Duration(seconds: 1));
+        if (Crypt(pass).match(pin.trim())) {
+          debugPrint("hello");
+          Navigator.pushReplacementNamed(context, '/home');
+        }
+        setState(() {
+          pin = '';
+          isCorrect = 0;
+        });
       }
-      setState(() {
-        pin = '';
-        isCorrect = 0;
-      });
     }
   }
 
@@ -80,7 +121,13 @@ class _LockScreenState extends State<LockScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             const Spacer(),
-            const Text('Please Enter your pin'),
+            Text(
+              box.get('pin') != null
+                  ? 'Please Enter your pin'
+                  : isSetup == 1
+                      ? "Please Set your pin"
+                      : "Please Confirm your pin",
+            ),
             const SizedBox(height: 24.0),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -98,20 +145,39 @@ class _LockScreenState extends State<LockScreen> {
             Text(
               isCorrect == 0
                   ? ''
-                  : isCorrect == 1
-                      ? 'Your Pin is Correct'
-                      : 'Wrong Pin, Please try again',
+                  : isCorrect == 1 || isCorrect == 3
+                      ? isCorrect == 1
+                          ? 'Correct Pin'
+                          : 'Correct Confirmation Pin, Pin Set Successfully'
+                      : isCorrect == 2
+                          ? 'Wrong Pin, Please try again'
+                          : 'Wrong Confirmation Pin, Please try again',
               style: TextStyle(
-                color: isCorrect == 1 ? Colors.green[400] : Colors.red[400],
+                color: isCorrect == 1 || isCorrect == 3
+                    ? Colors.green[400]
+                    : Colors.red[400],
+              ),
+            ),
+            TextButton(
+              onPressed: () {
+                setState(() {
+                  isSetup = 1;
+                  pin = '';
+                  pass = '';
+                });
+              },
+              child: Text(
+                isSetup == 2 ? 'Reset Pin' : '',
+                style: const TextStyle(
+                  color: Colors.grey,
+                ),
               ),
             ),
             const Spacer(),
-            buildPinRow(context, 1, 3),
-            const SizedBox(height: 32.0),
-            buildPinRow(context, 4, 3),
-            const SizedBox(height: 32.0),
-            buildPinRow(context, 7, 3),
-            const SizedBox(height: 32.0),
+            for (int i = 1; i <= 7; i += 3) ...{
+              buildPinRow(context, i, 3),
+              const SizedBox(height: 32.0),
+            },
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [

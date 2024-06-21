@@ -15,7 +15,7 @@ class PinWidget extends StatelessWidget {
         shape: BoxShape.circle,
         color: isCorrect == 0
             ? (isActive ? Colors.grey[600] : Colors.grey[200])
-            : isCorrect == 1
+            : isCorrect == 1 || isCorrect == 3
                 ? Colors.green[300]
                 : Colors.red[400], // Circle color
       ),

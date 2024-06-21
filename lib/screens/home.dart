@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/widgets.dart';
 import 'package:intl/intl.dart';
+import 'package:hive/hive.dart';
+import 'package:my_notes/models/note.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -11,58 +12,68 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  List<Map<String, dynamic>> notes = [
-    {
-      "id": 1,
-      "title": "Note 1",
-      "content": "Note 1 description",
-      "created_at": DateTime.parse("2024-06-24"),
-    },
-    {
-      "id": 2,
-      "title": "Note 2",
-      "content": "Note 2 description",
-      "created_at": DateTime.parse("2024-07-24"),
-    },
-    {
-      "id": 3,
-      "title": "Note 3",
-      "content": "Note 3 description",
-      "created_at": DateTime.parse("2024-08-24"),
-    }
-  ];
-
-  List<Map<String, dynamic>> notesCopy = [];
+  var searchController = TextEditingController();
+  var box = Hive.box('notes');
+  List<Note> notes = [];
+  List<Note> notesCopy = [];
 
   @override
   void initState() {
     super.initState();
+    notes = List<Note>.from(box.values.toList());
     notesCopy = List.from(notes);
   }
 
   // Function for snackbar
-  void launchSnackBar(BuildContext context, Map<String, dynamic> item) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text(
-        'Notes ${item["title"]} deleted',
-        style: const TextStyle(
-          color: Colors.white,
-          fontSize: 16,
-        ),
-      ),
-      action: SnackBarAction(
-        label: 'Undo',
-        textColor: Colors.white,
-        onPressed: () {
-          // Add item back to list
-          setState(() {
-            notes.add(item);
-            notesCopy.add(item);
-          });
-        },
-      ),
-      backgroundColor: Colors.red,
-    ));
+  void launchSnackBar(BuildContext context, Note item) {
+    showCupertinoDialog(
+      context: context,
+      builder: (context) {
+        return CupertinoAlertDialog(
+          title: const Text('Note Deleted'),
+          content: Text('Are you sure want to delete this note ${item.title}'),
+          actions: [
+            CupertinoDialogAction(
+              child: const Text(
+                'Cancel',
+                style: TextStyle(color: Colors.red),
+              ),
+              onPressed: () {
+                addNote(item);
+                Navigator.pop(context);
+              },
+            ),
+            CupertinoDialogAction(
+              child: const Text(
+                'Proceed',
+                style: TextStyle(color: Colors.blue),
+              ),
+              onPressed: () {
+                Navigator.pop(context);
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  // Function for deleting notes
+  void deleteNotes(Note item) {
+    final note = box.values.firstWhere((element) => element.id == item.id);
+    setState(() {
+      notes.removeWhere((element) => element.id == item.id);
+      notesCopy.removeWhere((element) => element.id == item.id);
+      box.delete(note.key);
+    });
+  }
+
+  void addNote(Note item) {
+    setState(() {
+      notes.add(item);
+      notesCopy.add(item);
+      box.add(item);
+    });
   }
 
   // function for filter notes
@@ -70,10 +81,25 @@ class _HomeScreenState extends State<HomeScreen> {
     value = value.toLowerCase();
     setState(() {
       notesCopy = notes.where((item) {
-        return item['title'].toLowerCase().contains(value) ||
-            item['content'].toLowerCase().contains(value) ||
-            DateFormat('yyyy-MM-dd').format(item['created_at']).contains(value);
+        return item.title.toLowerCase().contains(value) ||
+            item.content.toLowerCase().contains(value) ||
+            DateFormat('yyyy-MM-dd').format(item.createdAt).contains(value);
       }).toList();
+      notesCopy.sort((a, b) {
+        bool aPinned =
+            a.isPinned ?? false; // Default to false if isPinned is null
+        bool bPinned =
+            b.isPinned ?? false; // Default to false if isPinned is null
+
+        // Sort by isPinned in descending order (true comes before false)
+        if (aPinned && !bPinned) {
+          return -1; // a is pinned and b is not, so a should come before b
+        } else if (!aPinned && bPinned) {
+          return 1; // b is pinned and a is not, so b should come before a
+        } else {
+          return 0; // Both are either pinned or not pinned, maintain their order
+        }
+      });
     });
   }
 
@@ -140,9 +166,11 @@ class _HomeScreenState extends State<HomeScreen> {
                 children: [
                   CupertinoSearchTextField(
                     placeholder: 'Search',
-                    onChanged: (value) => {
-                      filterNotes(value),
+                    onChanged: (value) {
+                      searchController.text = value;
+                      filterNotes(value);
                     },
+                    controller: searchController,
                   ),
                   const SizedBox(height: 16.0),
                   Container(
@@ -156,14 +184,9 @@ class _HomeScreenState extends State<HomeScreen> {
                     child: Column(
                       children: notesCopy.map((item) {
                         return Dismissible(
-                          key: ValueKey(item['id']),
+                          key: ValueKey(item.id),
                           onDismissed: (direction) {
-                            setState(() {
-                              notes.removeWhere(
-                                  (element) => element['id'] == item['id']);
-                              notesCopy.removeWhere(
-                                  (element) => element['id'] == item['id']);
-                            });
+                            deleteNotes(item);
                             launchSnackBar(context, item);
                           },
                           background: Container(
@@ -191,11 +214,66 @@ class _HomeScreenState extends State<HomeScreen> {
                                 Navigator.pushNamed(context, '/detail',
                                     arguments: item);
                               },
-                              child: ListTile(
-                                title: Text(item['title']),
-                                subtitle: Text(item['content']),
-                                trailing: Text(DateFormat('yyyy-MM-dd')
-                                    .format(item['created_at'])),
+                              child: CupertinoListTile(
+                                padding: const EdgeInsets.only(
+                                  top: 16.0,
+                                  left: 8.0,
+                                  bottom: 16.0,
+                                  right: 16.0,
+                                ),
+                                leading: item.isPinned
+                                    ? IconButton(
+                                        icon: const Icon(
+                                          Icons.push_pin,
+                                          size: 16,
+                                          color: Colors.black,
+                                        ),
+                                        onPressed: () async {
+                                          setState(() {
+                                            notes
+                                                .firstWhere((element) =>
+                                                    element.id == item.id)
+                                                .isPinned = false;
+                                          });
+                                          await Future.delayed(const Duration(
+                                              milliseconds: 500));
+                                          setState(() {
+                                            filterNotes(searchController.text);
+                                          });
+                                        },
+                                      )
+                                    : IconButton(
+                                        icon: const Icon(
+                                          Icons.push_pin,
+                                          size: 16,
+                                          color: Colors.grey,
+                                        ),
+                                        onPressed: () async {
+                                          setState(() {
+                                            notes
+                                                .firstWhere((element) =>
+                                                    element.id == item.id)
+                                                .isPinned = true;
+                                          });
+                                          await Future.delayed(const Duration(
+                                              milliseconds: 500));
+                                          setState(() {
+                                            filterNotes(searchController.text);
+                                          });
+                                        },
+                                      ),
+                                leadingToTitle: 8.0,
+                                leadingSize: 30,
+                                title: Text(item.title),
+                                subtitle: Text(item.content,
+                                    maxLines: 1, overflow: TextOverflow.clip),
+                                trailing: Text(
+                                    DateFormat('yyyy-MM-dd')
+                                        .format(item.createdAt),
+                                    style: TextStyle(
+                                      color: Colors.grey[600],
+                                      fontSize: 12,
+                                    )),
                               ),
                             ),
                           ),
