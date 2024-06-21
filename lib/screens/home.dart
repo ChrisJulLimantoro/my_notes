@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:hive/hive.dart';
 import 'package:my_notes/models/note.dart';
 import 'package:my_notes/widgets/custom_tile.dart';
+import 'package:my_notes/screens/lock.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -88,10 +89,8 @@ class _HomeScreenState extends State<HomeScreen> {
             DateFormat('yyyy-MM-dd').format(item.createdAt).contains(value);
       }).toList();
       notesCopy.sort((a, b) {
-        bool aPinned =
-            a.isPinned ?? false; // Default to false if isPinned is null
-        bool bPinned =
-            b.isPinned ?? false; // Default to false if isPinned is null
+        bool aPinned = a.isPinned; // Default to false if isPinned is null
+        bool bPinned = b.isPinned; // Default to false if isPinned is null
 
         // Sort by isPinned in descending order (true comes before false)
         if (aPinned && !bPinned) {
@@ -151,7 +150,17 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   // function for setting menu
-  void launchSettingsMenu(BuildContext context) {}
+  void launchSettingsMenu(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      enableDrag: true,
+      isDismissible: true,
+      elevation: 1,
+      useSafeArea: false,
+      scrollControlDisabledMaxHeightRatio: 1,
+      builder: (BuildContext context) => const LockScreen(stage: 1),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -168,7 +177,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   color: Colors.grey,
                   size: 30,
                 ),
-                onPressed: () => {},
+                onPressed: () => {launchSettingsMenu(context)},
               ),
             ),
             title: const Text(

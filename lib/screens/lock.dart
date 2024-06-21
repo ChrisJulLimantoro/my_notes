@@ -6,7 +6,8 @@ import 'package:hive/hive.dart';
 // import 'package:my_notes/models/note.dart';
 
 class LockScreen extends StatefulWidget {
-  const LockScreen({Key? key}) : super(key: key);
+  final int stage;
+  const LockScreen({Key? key, required this.stage}) : super(key: key);
 
   @override
   State<LockScreen> createState() => _LockScreenState();
@@ -27,6 +28,23 @@ class _LockScreenState extends State<LockScreen> {
     } else {
       pass = box.get('pin');
     }
+
+    if (widget.stage == 2) {
+      isSetup = 1;
+    }
+  }
+
+  // function for setting menu
+  void launchSettingsMenu(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      enableDrag: true,
+      isDismissible: true,
+      elevation: 1,
+      useSafeArea: false,
+      scrollControlDisabledMaxHeightRatio: 1,
+      builder: (BuildContext context) => const LockScreen(stage: 2),
+    );
   }
 
   void addPin(BuildContext context, String value) async {
@@ -71,8 +89,11 @@ class _LockScreenState extends State<LockScreen> {
         });
         await Future.delayed(const Duration(seconds: 1));
         if (Crypt(pass).match(pin.trim())) {
-          debugPrint("hello");
-          Navigator.pushReplacementNamed(context, '/home');
+          if (widget.stage == 1) {
+            launchSettingsMenu(context);
+          } else {
+            Navigator.pushReplacementNamed(context, '/home');
+          }
         }
         setState(() {
           pin = '';
@@ -122,11 +143,11 @@ class _LockScreenState extends State<LockScreen> {
           children: [
             const Spacer(),
             Text(
-              box.get('pin') != null
+              box.get('pin') != null && (widget.stage == 0 || widget.stage == 1)
                   ? 'Please Enter your pin'
                   : isSetup == 1
-                      ? "Please Set your pin"
-                      : "Please Confirm your pin",
+                      ? "Please Set your new pin"
+                      : "Please Confirm your new pin",
             ),
             const SizedBox(height: 24.0),
             Row(

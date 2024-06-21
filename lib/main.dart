@@ -38,10 +38,10 @@ class MyApp extends StatelessWidget {
           useMaterial3: true,
         ),
         debugShowCheckedModeBanner: false,
-        home: const LockScreen(),
+        home: const LockScreen(stage: 0),
         routes: {
           '/home': (context) => const HomeScreen(),
-          '/lock': (context) => const LockScreen(),
+          '/lock': (context) => const LockScreen(stage: 0),
           '/new': (context) => const DetailScreen(isNew: true),
           '/detail': (context) => const DetailScreen(isNew: false),
         });
