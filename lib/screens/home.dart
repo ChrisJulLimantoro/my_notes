@@ -3,7 +3,6 @@ import 'package:flutter/cupertino.dart';
 import 'package:intl/intl.dart';
 import 'package:hive/hive.dart';
 import 'package:my_notes/models/note.dart';
-import 'package:my_notes/widgets/dismissable_bg.dart';
 import 'package:my_notes/widgets/custom_tile.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -244,7 +243,50 @@ class _HomeScreenState extends State<HomeScreen> {
                               pinNotes(item);
                             }
                           },
-                          background: DismissableBgWidget(pin: item.isPinned),
+                          background: Container(
+                            color: Colors.green,
+                            height: double.infinity,
+                            width: double.infinity,
+                            child: Padding(
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 16.0),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.start,
+                                children: [
+                                  const Icon(Icons.push_pin,
+                                      color: Colors.white),
+                                  const SizedBox(width: 8.0),
+                                  Text(item.isPinned ? 'Unpin' : 'Pin',
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                      )),
+                                ],
+                              ),
+                            ),
+                          ),
+                          secondaryBackground: Container(
+                            color: Colors.red,
+                            height: double.infinity,
+                            width: (MediaQuery.of(context).size.width / 2) - 20,
+                            child: const Padding(
+                              padding: EdgeInsets.symmetric(horizontal: 16.0),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.end,
+                                children: [
+                                  Text('Delete',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                      )),
+                                  SizedBox(width: 8.0),
+                                  Icon(Icons.delete, color: Colors.white),
+                                ],
+                              ),
+                            ),
+                          ),
                           child: Material(
                             color: Colors.transparent,
                             child: InkWell(
