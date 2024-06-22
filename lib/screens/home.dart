@@ -3,8 +3,9 @@ import 'package:flutter/cupertino.dart';
 import 'package:intl/intl.dart';
 import 'package:hive/hive.dart';
 import 'package:my_notes/models/note.dart';
-import 'package:my_notes/widgets/custom_tile.dart';
+import 'package:my_notes/widgets/custom_app_bar.dart';
 import 'package:my_notes/screens/lock.dart';
+import 'package:my_notes/widgets/dismissible_tile.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -98,7 +99,8 @@ class _HomeScreenState extends State<HomeScreen> {
         } else if (!aPinned && bPinned) {
           return 1; // b is pinned and a is not, so b should come before a
         } else {
-          return 0; // Both are either pinned or not pinned, maintain their order
+          return b.updatedAt.compareTo(a
+              .updatedAt); // Both are either pinned or not pinned, maintain their order
         }
       });
     });
@@ -168,52 +170,27 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       body: CustomScrollView(
         slivers: [
-          SliverAppBar(
-            leading: Padding(
-              padding: const EdgeInsets.only(left: 8.0),
-              child: IconButton(
-                icon: const Icon(
-                  Icons.settings,
-                  color: Colors.grey,
-                  size: 30,
-                ),
-                onPressed: () => {launchSettingsMenu(context)},
-              ),
-            ),
-            title: const Text(
-              'My Notes',
-              style: TextStyle(
-                color: Colors.black,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            actions: [
-              Padding(
-                padding: const EdgeInsets.only(right: 8.0),
-                child: IconButton(
-                  icon: const Icon(
-                    Icons.add,
-                    color: Colors.grey,
-                    size: 35,
-                  ),
-                  onPressed: () => {
-                    Navigator.pushNamed(context, '/new', arguments: {
-                      'isNew': true,
-                    }),
-                  },
-                ),
-              )
-            ],
-            backgroundColor: theme == Brightness.light
-                ? Colors.white.withAlpha(100)
-                : Colors.black.withAlpha(100),
-            surfaceTintColor: theme == Brightness.light
-                ? Colors.white.withAlpha(200)
-                : Colors.black.withAlpha(100),
-            elevation: 2,
-            pinned: true,
-            snap: true,
-            floating: true,
+          CupertinoSliverRefreshControl(
+            onRefresh: () async {
+              setState(() {
+                notes = List<Note>.from(box.values.toList());
+                notesCopy = List.from(notes);
+                filterNotes(searchController.text);
+              });
+            },
+          ),
+          CustomSliverAppBar(
+            titleText: 'My Notes',
+            updatedAt: '',
+            onSettingsPressed: () => {launchSettingsMenu(context)},
+            onNewNotePressed: () => {
+              Navigator.pushNamed(context, '/new', arguments: {
+                'isNew': true,
+              }),
+            },
+            onBackPressed: () {},
+            onSavePressed: () {},
+            theme: theme,
           ),
           SliverToBoxAdapter(
             child: Padding(
@@ -242,70 +219,11 @@ class _HomeScreenState extends State<HomeScreen> {
                     clipBehavior: Clip.antiAlias,
                     child: Column(
                       children: notesCopy.map((item) {
-                        return Dismissible(
-                          key: ValueKey(item.id),
-                          onDismissed: (direction) {
-                            deleteNotes(item);
-                            if (direction == DismissDirection.endToStart) {
-                              launchSnackBar(context, item);
-                            } else {
-                              pinNotes(item);
-                            }
-                          },
-                          background: Container(
-                            color: Colors.green,
-                            height: double.infinity,
-                            width: double.infinity,
-                            child: Padding(
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 16.0),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.start,
-                                children: [
-                                  const Icon(Icons.push_pin,
-                                      color: Colors.white),
-                                  const SizedBox(width: 8.0),
-                                  Text(item.isPinned ? 'Unpin' : 'Pin',
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.bold,
-                                      )),
-                                ],
-                              ),
-                            ),
-                          ),
-                          secondaryBackground: Container(
-                            color: Colors.red,
-                            height: double.infinity,
-                            width: (MediaQuery.of(context).size.width / 2) - 20,
-                            child: const Padding(
-                              padding: EdgeInsets.symmetric(horizontal: 16.0),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.end,
-                                children: [
-                                  Text('Delete',
-                                      style: TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.bold,
-                                      )),
-                                  SizedBox(width: 8.0),
-                                  Icon(Icons.delete, color: Colors.white),
-                                ],
-                              ),
-                            ),
-                          ),
-                          child: Material(
-                            color: Colors.transparent,
-                            child: InkWell(
-                              onTap: () {
-                                Navigator.pushNamed(context, '/detail',
-                                    arguments: item);
-                              },
-                              child: CustomTile(item: item),
-                            ),
-                          ),
+                        return DismissibleTile(
+                          item: item,
+                          deleteNotes: deleteNotes,
+                          pinNotes: pinNotes,
+                          launchSnackBar: launchSnackBar,
                         );
                       }).toList(),
                     ),

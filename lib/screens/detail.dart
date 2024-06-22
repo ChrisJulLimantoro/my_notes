@@ -3,6 +3,7 @@ import 'package:hive/hive.dart';
 import 'package:my_notes/models/note.dart';
 import 'package:uuid/uuid.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:my_notes/widgets/custom_app_bar.dart';
 
 class DetailScreen extends StatefulWidget {
   final bool isNew;
@@ -61,6 +62,32 @@ class _DetailScreenState extends State<DetailScreen> {
     });
   }
 
+  void back() {
+    if (disabled) {
+      Navigator.pop(context);
+    } else {
+      _showAlert(context);
+    }
+  }
+
+  void saveNote() {
+    if (!disabled) {
+      setState(() {
+        note.title = titleController.text;
+        note.content = notesController.text;
+        note.updatedAt = DateTime.now();
+        if (widget.isNew) {
+          note.createdAt = DateTime.now();
+          note.id = uuid.v4();
+          box.add(note);
+        }
+        note.save();
+        // disabled = true;
+        Navigator.pushReplacementNamed(context, '/home');
+      });
+    }
+  }
+
   // function to launch alert dialog
   void _showAlert(BuildContext context) {
     showCupertinoDialog(
@@ -99,81 +126,16 @@ class _DetailScreenState extends State<DetailScreen> {
     return Scaffold(
       body: CustomScrollView(
         slivers: [
-          SliverAppBar(
-            leading: TextButton(
-              child: Text(disabled ? 'Back' : 'Cancel',
-                  style: TextStyle(
-                    color: Colors.red[400],
-                    fontSize: 16,
-                  )),
-              onPressed: () {
-                if (disabled) {
-                  Navigator.pop(context);
-                } else {
-                  _showAlert(context);
-                }
-              },
-            ),
-            leadingWidth: 80,
-            title: Column(
-              children: [
-                Text(
-                  widget.isNew ? 'Untitled' : note.title,
-                  style: const TextStyle(
-                    color: Colors.black,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                Text(
-                  getTime(note.updatedAt),
-                  style: TextStyle(
-                    color: Colors.grey[600],
-                    fontSize: 12,
-                  ),
-                ),
-              ],
-            ),
-            actions: [
-              Padding(
-                padding: const EdgeInsets.only(right: 8.0),
-                child: TextButton(
-                  child: Text(
-                    'Save',
-                    style: TextStyle(
-                      color: disabled ? Colors.grey : Colors.blue,
-                      fontSize: 16,
-                    ),
-                  ),
-                  onPressed: () => {
-                    if (!disabled)
-                      {
-                        setState(() {
-                          note.title = titleController.text;
-                          note.content = notesController.text;
-                          note.updatedAt = DateTime.now();
-                          if (widget.isNew) {
-                            note.createdAt = DateTime.now();
-                            note.id = uuid.v4();
-                            box.add(note);
-                          }
-                          note.save();
-                          Navigator.pushReplacementNamed(context, '/home');
-                        })
-                      }
-                  },
-                ),
-              )
-            ],
-            backgroundColor: theme == Brightness.light
-                ? Colors.white.withAlpha(100)
-                : Colors.black.withAlpha(100),
-            surfaceTintColor: theme == Brightness.light
-                ? Colors.white.withAlpha(200)
-                : Colors.black.withAlpha(100),
-            elevation: 2,
-            pinned: true,
-            snap: true,
-            floating: true,
+          CustomSliverAppBar(
+            titleText: 'My Notes',
+            updatedAt: '',
+            onSettingsPressed: () => {},
+            onNewNotePressed: () => {},
+            onBackPressed: () => {back()},
+            onSavePressed: () => {saveNote()},
+            theme: theme,
+            isEditingMode: true,
+            isDisabled: disabled,
           ),
           SliverToBoxAdapter(
             child: Padding(
