@@ -170,15 +170,6 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       body: CustomScrollView(
         slivers: [
-          CupertinoSliverRefreshControl(
-            onRefresh: () async {
-              setState(() {
-                notes = List<Note>.from(box.values.toList());
-                notesCopy = List.from(notes);
-                filterNotes(searchController.text);
-              });
-            },
-          ),
           CustomSliverAppBar(
             titleText: 'My Notes',
             updatedAt: '',
@@ -191,6 +182,32 @@ class _HomeScreenState extends State<HomeScreen> {
             onBackPressed: () {},
             onSavePressed: () {},
             theme: theme,
+          ),
+          CupertinoSliverRefreshControl(
+            onRefresh: () async {
+              setState(() {
+                notes = List<Note>.from(box.values.toList());
+                notesCopy = List.from(notes);
+                filterNotes(searchController.text);
+              });
+            },
+            refreshIndicatorExtent: 100,
+            refreshTriggerPullDistance: 100,
+            builder: (
+              context,
+              refreshIndicatorExtent,
+              refreshTriggerPullDistance,
+              pulledExtent,
+              refreshState,
+            ) {
+              return const Center(
+                child: CupertinoActivityIndicator(
+                  radius: 14.0,
+                  key: Key('refresh-indicator'),
+                  animating: true,
+                ),
+              );
+            },
           ),
           SliverToBoxAdapter(
             child: Padding(
