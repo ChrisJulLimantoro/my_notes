@@ -21,7 +21,8 @@ class DismissibleBg extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16.0),
         child: Row(
-          mainAxisAlignment: MainAxisAlignment.end,
+          mainAxisAlignment:
+              isSecondary ? MainAxisAlignment.end : MainAxisAlignment.start,
           children: isSecondary
               ? const [
                   Text('Delete',

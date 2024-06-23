@@ -200,12 +200,14 @@ class _HomeScreenState extends State<HomeScreen> {
               pulledExtent,
               refreshState,
             ) {
-              return const Center(
-                child: CupertinoActivityIndicator(
-                  radius: 14.0,
-                  key: Key('refresh-indicator'),
-                  animating: true,
-                ),
+              return Center(
+                child: Theme.of(context).platform == TargetPlatform.iOS
+                    ? const CupertinoActivityIndicator(
+                        radius: 14.0,
+                        key: Key('refresh-indicator'),
+                        animating: true,
+                      )
+                    : const CircularProgressIndicator(),
               );
             },
           ),

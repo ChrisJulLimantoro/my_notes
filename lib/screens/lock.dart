@@ -15,6 +15,7 @@ class LockScreen extends StatefulWidget {
 
 class _LockScreenState extends State<LockScreen> {
   var box = Hive.box('settings');
+  var notes = Hive.box('notes');
   String pin = '';
   String pass = '';
   int isCorrect = 0;
@@ -34,8 +35,44 @@ class _LockScreenState extends State<LockScreen> {
     }
   }
 
+  // function for reset pin
+  void _launchAlertWarning(BuildContext context) {
+    showCupertinoDialog(
+      context: context,
+      builder: (context) {
+        return CupertinoAlertDialog(
+          title: const Text('Reset Pin'),
+          content: const Text(
+              'Are you sure want to reset your pin?\n This action cannot be undone.\n all your notes will be lost!'),
+          actions: [
+            CupertinoDialogAction(
+              child: const Text(
+                'Cancel',
+                style: TextStyle(color: Colors.red),
+              ),
+              onPressed: () {
+                Navigator.pop(context);
+              },
+            ),
+            CupertinoDialogAction(
+              child: const Text(
+                'Proceed',
+                style: TextStyle(color: Colors.blue),
+              ),
+              onPressed: () {
+                box.delete('pin');
+                notes.clear();
+                Navigator.pop(context);
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   // function for setting menu
-  void launchSettingsMenu(BuildContext context) {
+  void _launchSettingsMenu(BuildContext context) {
     showModalBottomSheet(
       context: context,
       enableDrag: true,
@@ -47,6 +84,7 @@ class _LockScreenState extends State<LockScreen> {
     );
   }
 
+  // function for each add pin
   void addPin(BuildContext context, String value) async {
     if (pin.length < 5) {
       setState(() {
@@ -90,7 +128,7 @@ class _LockScreenState extends State<LockScreen> {
         await Future.delayed(const Duration(seconds: 1));
         if (Crypt(pass).match(pin.trim())) {
           if (widget.stage == 1) {
-            launchSettingsMenu(context);
+            _launchSettingsMenu(context);
           } else {
             Navigator.pushReplacementNamed(context, '/home');
           }
@@ -103,6 +141,7 @@ class _LockScreenState extends State<LockScreen> {
     }
   }
 
+  // function for each remove pin
   void removePin() {
     if (pin.isNotEmpty) {
       setState(() {
@@ -111,6 +150,7 @@ class _LockScreenState extends State<LockScreen> {
     }
   }
 
+  // function for buildpin row
   Widget buildPinRow(BuildContext context, int start, int count) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
@@ -179,21 +219,31 @@ class _LockScreenState extends State<LockScreen> {
                     : Colors.red[400],
               ),
             ),
-            TextButton(
-              onPressed: () {
-                setState(() {
-                  isSetup = 1;
-                  pin = '';
-                  pass = '';
-                });
-              },
-              child: Text(
-                isSetup == 2 ? 'Reset Pin' : '',
-                style: const TextStyle(
-                  color: Colors.grey,
-                ),
-              ),
-            ),
+            box.get('pin') != null && (widget.stage == 0 || widget.stage == 1)
+                ? TextButton(
+                    onPressed: () => _launchAlertWarning(context),
+                    child: const Text(
+                      'Forgot Pin',
+                      style: TextStyle(
+                        color: Colors.red,
+                      ),
+                    ),
+                  )
+                : TextButton(
+                    onPressed: () {
+                      setState(() {
+                        isSetup = 1;
+                        pin = '';
+                        pass = '';
+                      });
+                    },
+                    child: Text(
+                      isSetup == 2 ? 'Reset Pin' : '',
+                      style: const TextStyle(
+                        color: Colors.grey,
+                      ),
+                    ),
+                  ),
             const Spacer(),
             for (int i = 1; i <= 7; i += 3) ...{
               buildPinRow(context, i, 3),
