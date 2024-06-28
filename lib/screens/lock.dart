@@ -62,7 +62,7 @@ class _LockScreenState extends State<LockScreen> {
               onPressed: () {
                 box.delete('pin');
                 notes.clear();
-                Navigator.pop(context);
+                Navigator.pushReplacementNamed(context, '/lock');
               },
             ),
           ],
